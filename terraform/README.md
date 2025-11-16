@@ -53,7 +53,7 @@ Voir `variables.tf` pour la liste complète. Variables importantes :
 - `cluster_name` : Nom du cluster EKS
 - `kubernetes_version` : Version Kubernetes (défaut: 1.28)
 - `node_group_desired_size` : Nombre de nodes (défaut: 2)
-- `node_instance_types` : Type d'instances EC2 (défaut: ["m6gd.medium"])
+- `node_instance_types` : Type d'instances EC2 (défaut: ["c7i-flex.large"])
 
 ## Outputs
 

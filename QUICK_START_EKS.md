@@ -145,10 +145,10 @@ terraform destroy
 
 - **EKS Cluster** : ~$72/mois
 - **NAT Gateway** : ~$32/mois
-- **EC2 Instances (2x m6gd.medium)** : ~$60/mois
+- **EC2 Instances (2x c7i-flex.large)** : ~$144/mois
 - **LoadBalancer** : ~$16/mois
 
-**Total** : ~$180-200/mois
+**Total** : ~$264-280/mois
 
 💡 **Conseil** : Utilisez `terraform destroy` quand vous n'utilisez pas le cluster pour économiser.
 
