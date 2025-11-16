@@ -15,7 +15,30 @@ env:
   ECR_REPOSITORY_PREFIX: meteo
 
 jobs:
+  create-ecr-repositories:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Create ECR repositories if they don't exist
+        run: |
+          aws ecr describe-repositories --repository-names ${{ env.ECR_REPOSITORY_PREFIX }}-weather-service || \
+          aws ecr create-repository --repository-name ${{ env.ECR_REPOSITORY_PREFIX }}-weather-service --image-scanning-configuration scanOnPush=true
+          
+          aws ecr describe-repositories --repository-names ${{ env.ECR_REPOSITORY_PREFIX }}-location-service || \
+          aws ecr create-repository --repository-name ${{ env.ECR_REPOSITORY_PREFIX }}-location-service --image-scanning-configuration scanOnPush=true
+          
+          aws ecr describe-repositories --repository-names ${{ env.ECR_REPOSITORY_PREFIX }}-weather-report-service || \
+          aws ecr create-repository --repository-name ${{ env.ECR_REPOSITORY_PREFIX }}-weather-report-service --image-scanning-configuration scanOnPush=true
+
   build-and-push:
+    needs: create-ecr-repositories
     runs-on: ubuntu-latest
     
     strategy:
@@ -74,27 +97,4 @@ jobs:
           echo "Successfully pushed image for ${{ matrix.service }}"
           echo "Repository: $ECR_REPOSITORY_PREFIX-${{ matrix.service }}"
           echo "Tag: ${{ github.sha }}"
-
-  create-ecr-repositories:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
-    
-    steps:
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Create ECR repositories if they don't exist
-        run: |
-          aws ecr describe-repositories --repository-names ${{ env.ECR_REPOSITORY_PREFIX }}-weather-service || \
-          aws ecr create-repository --repository-name ${{ env.ECR_REPOSITORY_PREFIX }}-weather-service --image-scanning-configuration scanOnPush=true
-          
-          aws ecr describe-repositories --repository-names ${{ env.ECR_REPOSITORY_PREFIX }}-location-service || \
-          aws ecr create-repository --repository-name ${{ env.ECR_REPOSITORY_PREFIX }}-location-service --image-scanning-configuration scanOnPush=true
-          
-          aws ecr describe-repositories --repository-names ${{ env.ECR_REPOSITORY_PREFIX }}-weather-report-service || \
-          aws ecr create-repository --repository-name ${{ env.ECR_REPOSITORY_PREFIX }}-weather-report-service --image-scanning-configuration scanOnPush=true
 
