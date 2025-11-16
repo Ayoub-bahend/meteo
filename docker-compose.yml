@@ -1,11 +1,12 @@
-version: '3.8'
-
 services:
   weather-service:
     image: ${ECR_REGISTRY:-864522970972.dkr.ecr.us-east-1.amazonaws.com}/meteo-weather-service:${IMAGE_TAG:-latest}
     container_name: weather-service
     ports:
       - "8081:8081"
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     networks:
       - meteo-network
     healthcheck:
@@ -20,6 +21,9 @@ services:
     container_name: location-service
     ports:
       - "8082:8082"
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     networks:
       - meteo-network
     healthcheck:
@@ -34,6 +38,9 @@ services:
     container_name: weather-report-service
     ports:
       - "8083:8083"
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     environment:
       # Utiliser les noms des services Docker Compose pour la communication interne
       - WEATHER_SERVICE_URL=http://weather-service:8081
