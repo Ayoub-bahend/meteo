@@ -61,7 +61,7 @@ variable "node_group_desired_size" {
 variable "node_instance_types" {
   description = "EC2 instance types for the node group"
   type        = list(string)
-  default     = ["t3.medium"]
+  default     = ["m6gd.medium"]
 }
 
 variable "ecr_repository_prefix" {

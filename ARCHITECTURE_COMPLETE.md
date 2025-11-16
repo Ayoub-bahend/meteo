@@ -364,9 +364,9 @@ locationServiceUrl: "http://location-service:8082"
 │  │  │  └──────────────────────────────────────────────┘    │    │   │
 │  │  │                                                       │    │   │
 │  │  │  ┌──────────────────────────────────────────────┐    │    │   │
-│  │  │  │         Node Group (t3.medium)              │    │    │   │
+│  │  │  │         Node Group (m6gd.medium)            │    │    │   │
 │  │  │  │  - Min: 1, Desired: 2, Max: 3                │    │    │   │
-│  │  │  │  - Instance Type: t3.medium                   │    │    │   │
+│  │  │  │  - Instance Type: m6gd.medium                 │    │    │   │
 │  │  │  │  - Capacity: ON_DEMAND                       │    │    │   │
 │  │  │  │                                               │    │   │
 │  │  │  │  ┌──────────────────────────────────────┐    │    │   │
@@ -450,7 +450,7 @@ locationServiceUrl: "http://location-service:8082"
 #### 3. Node Group
 
 - **Nom** : `main`
-- **Instance Type** : `t3.medium`
+- **Instance Type** : `m6gd.medium`
 - **Capacity Type** : `ON_DEMAND`
 - **Scaling** :
   - Min : 1
@@ -915,7 +915,7 @@ Jobs:
 │  │                                           │                       │  │
 │  │                                           │                       │  │
 │  │  ┌───────────────────────────────────────▼───────────────────┐   │  │
-│  │  │         EKS Node Group (t3.medium)                        │   │  │
+│  │  │         EKS Node Group (m6gd.medium)                     │   │  │
 │  │  │                                                           │   │  │
 │  │  │  ┌───────────────────────────────────────────────────┐  │   │  │
 │  │  │  │  Namespace: meteo                                  │  │   │  │
@@ -1018,7 +1018,7 @@ Jobs:
 |-----------|--------------|-------------|
 | EKS Cluster | ~$72 | $0.10/heure × 24h × 30j |
 | NAT Gateway | ~$32 | $0.045/heure × 24h × 30j |
-| EC2 Instances (2x t3.medium) | ~$60 | $0.0416/heure × 2 × 24h × 30j |
+| EC2 Instances (2x m6gd.medium) | ~$60 | $0.0416/heure × 2 × 24h × 30j |
 | Network Load Balancer | ~$16 | $0.0225/heure + trafic |
 | ECR Storage | ~$1-5 | Selon le nombre d'images |
 | CloudWatch Logs | ~$5-10 | Selon le volume de logs |

@@ -85,7 +85,7 @@ Votre utilisateur AWS doit avoir les permissions pour :
 │                                                         │
 │  ┌─────────────────────────────────────────────────┐   │
 │  │           Node Group (EC2 Instances)            │   │
-│  │         t3.medium (2-3 instances)               │   │
+│  │         m6gd.medium (2-3 instances)              │   │
 │  └─────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────┘
                           │
@@ -121,7 +121,7 @@ aws_region = "us-east-1"          # Votre région AWS
 environment = "dev"                # dev, staging, prod
 cluster_name = "meteo-cluster"     # Nom du cluster
 kubernetes_version = "1.28"        # Version Kubernetes
-node_instance_types = ["t3.medium"] # Type d'instances
+node_instance_types = ["m6gd.medium"] # Type d'instances
 ```
 
 ### 1.3 Initialiser Terraform
@@ -173,7 +173,7 @@ Tapez `yes` pour confirmer.
 - ✅ 1 VPC avec 2 sous-réseaux publics et 2 privés
 - ✅ 1 NAT Gateway
 - ✅ 1 Cluster EKS
-- ✅ 1 Node Group avec 2 instances EC2 (t3.medium)
+- ✅ 1 Node Group avec 2 instances EC2 (m6gd.medium)
 - ✅ Security Groups et règles de sécurité
 
 ### 2.3 Vérifier les Outputs
@@ -493,7 +493,7 @@ kubectl run -it --rm debug --image=busybox --restart=Never -n meteo -- wget -O- 
 
 - **EKS Cluster** : ~$0.10/heure (~$72/mois)
 - **NAT Gateway** : ~$0.045/heure (~$32/mois)
-- **EC2 Instances (2x t3.medium)** : ~$0.0416/heure × 2 (~$60/mois)
+- **EC2 Instances (2x m6gd.medium)** : ~$0.0416/heure × 2 (~$60/mois)
 - **LoadBalancer (NLB)** : ~$0.0225/heure + trafic (~$16/mois)
 
 **Total estimé** : ~$180-200/mois pour un environnement de développement
