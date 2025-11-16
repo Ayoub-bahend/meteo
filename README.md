@@ -46,7 +46,7 @@ mvn clean install
 To build a specific service:
 
 ```bash
-cd weather-service
+cd microservices/weather-service
 mvn clean install
 ```
 
@@ -56,21 +56,21 @@ You need to run the services in the following order:
 
 ### 1. Start Weather Service
 ```bash
-cd weather-service
+cd microservices/weather-service
 mvn spring-boot:run
 ```
 Service will start on port 8081
 
 ### 2. Start Location Service
 ```bash
-cd location-service
+cd microservices/location-service
 mvn spring-boot:run
 ```
 Service will start on port 8082
 
 ### 3. Start Weather Report Service
 ```bash
-cd weather-report-service
+cd microservices/weather-report-service
 mvn spring-boot:run
 ```
 Service will start on port 8083
@@ -135,38 +135,39 @@ Response:
 ```
 meteo/
 ├── pom.xml                          # Parent POM
-├── weather-service/                 # Weather Service Module
-│   ├── pom.xml
-│   └── src/main/java/com/meteo/weather/
-│       ├── WeatherServiceApplication.java
-│       ├── controller/
-│       │   └── WeatherController.java
-│       ├── model/
-│       │   └── Weather.java
-│       └── service/
-│           └── WeatherService.java
-├── location-service/                # Location Service Module
-│   ├── pom.xml
-│   └── src/main/java/com/meteo/location/
-│       ├── LocationServiceApplication.java
-│       ├── controller/
-│       │   └── LocationController.java
-│       ├── model/
-│       │   └── Location.java
-│       └── service/
-│           └── LocationService.java
-└── weather-report-service/          # Weather Report Service Module
-    ├── pom.xml
-    └── src/main/java/com/meteo/report/
-        ├── WeatherReportServiceApplication.java
-        ├── controller/
-        │   └── WeatherReportController.java
-        ├── model/
-        │   ├── WeatherReport.java
-        │   ├── Weather.java
-        │   └── Location.java
-        └── service/
-            └── WeatherReportService.java
+└── microservices/                   # Microservices directory
+    ├── weather-service/             # Weather Service Module
+    │   ├── pom.xml
+    │   └── src/main/java/com/meteo/weather/
+    │       ├── WeatherServiceApplication.java
+    │       ├── controller/
+    │       │   └── WeatherController.java
+    │       ├── model/
+    │       │   └── Weather.java
+    │       └── service/
+    │           └── WeatherService.java
+    ├── location-service/            # Location Service Module
+    │   ├── pom.xml
+    │   └── src/main/java/com/meteo/location/
+    │       ├── LocationServiceApplication.java
+    │       ├── controller/
+    │       │   └── LocationController.java
+    │       ├── model/
+    │       │   └── Location.java
+    │       └── service/
+    │           └── LocationService.java
+    └── weather-report-service/      # Weather Report Service Module
+        ├── pom.xml
+        └── src/main/java/com/meteo/report/
+            ├── WeatherReportServiceApplication.java
+            ├── controller/
+            │   └── WeatherReportController.java
+            ├── model/
+            │   ├── WeatherReport.java
+            │   ├── Weather.java
+            │   └── Location.java
+            └── service/
+                └── WeatherReportService.java
 ```
 
 ## Configuration
@@ -194,6 +195,93 @@ Potential improvements:
 - Add caching
 - Add error handling and circuit breakers
 - Add unit and integration tests
+
+## Docker and AWS ECR Deployment
+
+The project includes Docker support and GitHub Actions workflow for building and pushing images to AWS ECR.
+
+### Docker Files
+
+Each microservice has its own Dockerfile located in:
+- `microservices/weather-service/Dockerfile`
+- `microservices/location-service/Dockerfile`
+- `microservices/weather-report-service/Dockerfile`
+
+### Building Docker Images Locally
+
+To build a Docker image for a service:
+
+```bash
+# From the project root
+docker build -f microservices/weather-service/Dockerfile -t meteo-weather-service:latest .
+docker build -f microservices/location-service/Dockerfile -t meteo-location-service:latest .
+docker build -f microservices/weather-report-service/Dockerfile -t meteo-weather-report-service:latest .
+```
+
+### GitHub Actions Workflow for ECR
+
+The workflow file `.github/workflows/client.yaml` (or `client.yaml` at root) automatically:
+
+1. **Builds Maven projects** for each microservice
+2. **Creates Docker images** for each service
+3. **Pushes images to AWS ECR** with tags:
+   - Commit SHA (e.g., `meteo-weather-service:abc123`)
+   - `latest` tag
+
+#### Prerequisites for ECR Deployment
+
+1. **AWS Credentials**: Set up GitHub Secrets:
+   - `AWS_ACCESS_KEY_ID`: Your AWS access key
+   - `AWS_SECRET_ACCESS_KEY`: Your AWS secret key
+
+2. **AWS Region**: Configure in workflow file (default: `us-east-1`)
+
+3. **ECR Repository Prefix**: Configure in workflow file (default: `meteo`)
+
+#### Workflow Triggers
+
+The workflow runs on:
+- Push to `main` or `dev` branches
+- Pull requests to `main`
+- Manual trigger (`workflow_dispatch`)
+
+#### ECR Repositories
+
+The workflow automatically creates these ECR repositories if they don't exist:
+- `meteo-weather-service`
+- `meteo-location-service`
+- `meteo-weather-report-service`
+
+#### Image Tags
+
+Images are tagged with:
+- **Commit SHA**: For traceability (e.g., `meteo-weather-service:abc123def`)
+- **Latest**: For convenience (e.g., `meteo-weather-service:latest`)
+
+#### Example Image URIs
+
+After successful deployment, images will be available at:
+```
+<AWS_ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/meteo-weather-service:<TAG>
+<AWS_ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/meteo-location-service:<TAG>
+<AWS_ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/meteo-weather-report-service:<TAG>
+```
+
+### Running from Docker Images
+
+After pulling images from ECR:
+
+```bash
+# Pull images
+docker pull <ECR_URI>/meteo-weather-service:latest
+docker pull <ECR_URI>/meteo-location-service:latest
+docker pull <ECR_URI>/meteo-weather-report-service:latest
+
+# Run containers
+docker run -p 8081:8081 <ECR_URI>/meteo-weather-service:latest
+docker run -p 8082:8082 <ECR_URI>/meteo-location-service:latest
+docker run -p 8083:8083 <ECR_URI>/meteo-weather-report-service:latest
+```
 
 ## License
 

@@ -14,9 +14,9 @@
     <description>Simple Spring Boot microservices project with weather, location, and report services</description>
 
     <modules>
-        <module>weather-service</module>
-        <module>location-service</module>
-        <module>weather-report-service</module>
+        <module>microservices/weather-service</module>
+        <module>microservices/location-service</module>
+        <module>microservices/weather-report-service</module>
     </modules>
 
     <parent>

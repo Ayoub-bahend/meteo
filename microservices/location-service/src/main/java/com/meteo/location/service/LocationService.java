@@ -30,7 +30,7 @@ public class LocationService {
             return locationData.get(cityName);
         }
         
-        // Generate random location for unknown cities
+        // Generate random location for unknown cities  
         double lat = -90 + random.nextDouble() * 180;
         double lon = -180 + random.nextDouble() * 360;
         String country = "Unknown";
