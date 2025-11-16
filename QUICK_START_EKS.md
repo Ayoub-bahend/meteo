@@ -15,11 +15,13 @@ Guide rapide pour déployer les microservices Meteo sur EKS.
 4. **Cliquer sur "Run workflow"**
 
 Cela va automatiquement :
-1. ✅ Planifier Terraform
-2. ✅ Créer le cluster EKS (15-20 minutes)
+1. ✅ Planifier Terraform (2 minutes)
+2. ✅ Créer le cluster EKS (15-20 minutes) - Attend que le plan soit terminé
 3. ✅ Configurer kubectl
 4. ✅ Créer le secret ECR
-5. ✅ Déployer l'application avec Helm
+5. ✅ Déployer l'application avec Helm (5 minutes) - Attend que le cluster soit créé
+
+**Note** : Les jobs s'exécutent dans l'ordre grâce aux dépendances (`needs`). Le workflow gère automatiquement les outputs Terraform avec un système de fallback si nécessaire.
 
 ### Méthode 2 : Manuellement
 
@@ -149,4 +151,21 @@ terraform destroy
 **Total** : ~$180-200/mois
 
 💡 **Conseil** : Utilisez `terraform destroy` quand vous n'utilisez pas le cluster pour économiser.
+
+## 🔧 Dépannage
+
+### Erreur "AlreadyExistsException"
+
+Si vous obtenez des erreurs lors de `terraform apply` :
+
+```bash
+cd terraform
+export CLUSTER_NAME="meteo-cluster"  # ou "meteo-cluster-dev"
+export AWS_REGION="us-east-1"
+./cleanup-existing-resources.sh
+```
+
+Puis relancez `terraform apply`.
+
+📖 **Guide complet** : Consultez `terraform/TROUBLESHOOTING.md` pour toutes les solutions aux erreurs courantes.
 

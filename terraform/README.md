@@ -41,6 +41,9 @@ terraform apply
 ```bash
 # Supprimer toutes les ressources
 terraform destroy
+
+# Si vous obtenez des erreurs "AlreadyExistsException", nettoyez d'abord :
+./cleanup-existing-resources.sh
 ```
 
 ## Variables Principales
@@ -65,6 +68,17 @@ Après `terraform apply`, utilisez `terraform output` pour voir :
 - **EKS Module** : `terraform-aws-modules/eks/aws`
 
 Ces modules sont téléchargés automatiquement lors de `terraform init`.
+
+## Dépannage
+
+Si vous rencontrez des erreurs lors du déploiement, consultez `TROUBLESHOOTING.md` pour les solutions courantes.
+
+**Erreur "AlreadyExistsException" ?** Utilisez le script de nettoyage :
+```bash
+export CLUSTER_NAME="meteo-cluster"  # ou meteo-cluster-dev
+export AWS_REGION="us-east-1"
+./cleanup-existing-resources.sh
+```
 
 ## Coûts
 

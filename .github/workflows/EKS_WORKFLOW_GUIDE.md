@@ -133,14 +133,18 @@ Le workflow nécessite ces secrets dans GitHub :
 - ✅ Configure AWS credentials
 - ✅ Download Terraform plan
 - ✅ Terraform Apply
+- ✅ Get Cluster Name (avec fallback sur variable d'environnement)
 - ✅ Configure kubectl
 - ✅ Verify connection
 
-### Job 3 : `deploy-helm` (peut s'exécuter indépendamment)
+### Job 3 : `deploy-helm` (dépend de terraform-apply)
+
+**Note** : Ce job attend que `terraform-apply` soit terminé pour s'assurer que le cluster existe.
 
 - ✅ Checkout code
 - ✅ Configure AWS credentials
-- ✅ Get cluster info from Terraform
+- ✅ Get cluster info from Terraform (avec fallback sur variable d'environnement)
+- ✅ Vérifie que le cluster existe via AWS CLI
 - ✅ Configure kubectl
 - ✅ Setup Helm
 - ✅ Get AWS Account ID
@@ -232,6 +236,9 @@ Le workflow utilise ces variables par défaut :
 - `TERRAFORM_DIR`: `terraform`
 - `HELM_CHART_DIR`: `helm/meteo-app`
 - `NAMESPACE`: `meteo`
+- `EKS_CLUSTER_NAME`: `meteo-cluster-{environment}` (construit dynamiquement)
+
+**Note** : `EKS_CLUSTER_NAME` est utilisé comme fallback si les outputs Terraform ne sont pas disponibles.
 
 Vous pouvez les modifier dans le fichier `deploy-eks.yaml`.
 
@@ -273,14 +280,22 @@ Pour modifier le comportement :
 2. Vérifier que le secret ECR est créé correctement
 3. Vérifier que le token ECR n'a pas expiré
 
-### Workflow échoue sur "Terraform plan failed"
+### Workflow échoue sur "Terraform plan failed" ou "AlreadyExistsException"
 
-**Problème** : Erreur dans la configuration Terraform
+**Problème** : Erreur dans la configuration Terraform ou ressources existantes
 
 **Solution** :
-1. Vérifier les logs du workflow
-2. Vérifier `terraform/terraform.tfvars`
-3. Tester localement avec `terraform plan`
+1. Si erreur "AlreadyExistsException" : Utilisez le script de nettoyage
+   ```bash
+   cd terraform
+   export CLUSTER_NAME="meteo-cluster-dev"
+   export AWS_REGION="us-east-1"
+   ./cleanup-existing-resources.sh
+   ```
+2. Vérifier les logs du workflow
+3. Vérifier `terraform/terraform.tfvars`
+4. Tester localement avec `terraform plan`
+5. Consulter `terraform/TROUBLESHOOTING.md` pour plus de détails
 
 ## 📚 Ressources
 

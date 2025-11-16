@@ -418,6 +418,36 @@ terraform apply
 
 ## Dépannage
 
+### Erreurs Terraform
+
+#### Erreur "AlreadyExistsException" pour KMS ou CloudWatch
+
+Si vous obtenez des erreurs lors de `terraform apply` :
+
+```
+Error: creating KMS Alias: AlreadyExistsException
+Error: creating CloudWatch Logs Log Group: ResourceAlreadyExistsException
+```
+
+**Solution** : Utilisez le script de nettoyage :
+
+```bash
+cd terraform
+export CLUSTER_NAME="meteo-cluster"  # ou "meteo-cluster-dev"
+export AWS_REGION="us-east-1"
+./cleanup-existing-resources.sh
+```
+
+Puis relancez `terraform apply`.
+
+📖 **Guide complet** : Consultez `terraform/TROUBLESHOOTING.md` pour toutes les solutions aux erreurs Terraform.
+
+#### Autres Erreurs Terraform
+
+- **Outputs non trouvés** : Le workflow GitHub Actions gère automatiquement ce cas
+- **Permissions AWS** : Vérifiez que votre utilisateur a les permissions EKS/EC2/IAM
+- **Cluster existe déjà** : Supprimez-le d'abord ou utilisez un nom différent
+
 ### Pods en Erreur
 
 ```bash
@@ -475,6 +505,35 @@ terraform destroy  # ⚠️ Supprime tout
 
 ---
 
+## Dépannage
+
+### Erreur "AlreadyExistsException" pour KMS ou CloudWatch
+
+Si vous obtenez des erreurs comme :
+```
+Error: creating KMS Alias: AlreadyExistsException
+Error: creating CloudWatch Logs Log Group: ResourceAlreadyExistsException
+```
+
+**Solution** : Utilisez le script de nettoyage dans `terraform/` :
+
+```bash
+cd terraform
+export CLUSTER_NAME="meteo-cluster"  # ou "meteo-cluster-dev"
+export AWS_REGION="us-east-1"
+./cleanup-existing-resources.sh
+```
+
+Puis relancez `terraform apply`.
+
+📖 **Guide complet** : Consultez `terraform/TROUBLESHOOTING.md` pour toutes les solutions aux erreurs courantes.
+
+### Autres Problèmes
+
+- **Outputs Terraform non trouvés** : Le workflow GitHub Actions gère automatiquement ce cas avec un système de fallback
+- **Permissions AWS** : Vérifiez que votre utilisateur a les permissions EKS/EC2/IAM nécessaires
+- **Cluster existe déjà** : Supprimez-le d'abord ou utilisez un nom différent
+
 ## Nettoyage
 
 ### Supprimer les Déploiements Helm
@@ -492,6 +551,20 @@ terraform destroy
 ```
 
 **⚠️ ATTENTION** : Cela supprime TOUT (VPC, EKS, instances EC2, etc.)
+
+### Nettoyer les Ressources Orphelines
+
+Si `terraform destroy` échoue ou laisse des ressources orphelines :
+
+```bash
+cd terraform
+./cleanup-existing-resources.sh
+```
+
+Ce script supprime :
+- Les alias KMS orphelins
+- Les groupes de logs CloudWatch orphelins
+- Vérifie s'il reste un cluster EKS
 
 ---
 

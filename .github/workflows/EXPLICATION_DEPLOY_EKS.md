@@ -222,10 +222,12 @@ Quand vous choisissez `action: 'all'`, voici l'ordre :
    ↓
 2. terraform-apply     (15-20 minutes) - Attendre que plan soit fini
    ↓
-3. deploy-helm         (5 minutes) - Attendre que apply soit fini
+3. deploy-helm         (5 minutes) - Attendre que apply soit fini (needs: terraform-apply)
 ```
 
 **Total** : ~20-25 minutes pour tout déployer
+
+**Important** : Le job `deploy-helm` a une dépendance explicite (`needs: [terraform-apply]`) pour garantir que le cluster existe avant le déploiement. Si les outputs Terraform ne sont pas disponibles, le workflow utilise la variable d'environnement `EKS_CLUSTER_NAME` comme fallback.
 
 ---
 
@@ -236,9 +238,14 @@ Quand vous choisissez `action: 'all'`, voici l'ordre :
 ```yaml
 terraform-apply:
   needs: terraform-plan  # Ne peut pas commencer avant que plan soit fini
+
+deploy-helm:
+  needs: [terraform-apply]  # Ne peut pas commencer avant que apply soit fini
 ```
 
-**Exemple** : Vous ne pouvez pas construire une maison (`apply`) avant d'avoir le plan (`plan`)
+**Exemple** : 
+- Vous ne pouvez pas construire une maison (`apply`) avant d'avoir le plan (`plan`)
+- Vous ne pouvez pas emménager (`deploy-helm`) avant que la maison soit construite (`apply`)
 
 ---
 
@@ -413,9 +420,15 @@ push:
 
 ```yaml
 - name: Get Cluster Name
-  run: CLUSTER_NAME=$(terraform output -raw cluster_name)
+  run: |
+    CLUSTER_NAME=$(terraform output -raw cluster_name 2>/dev/null || echo "")
+    if [ -z "$CLUSTER_NAME" ]; then
+      CLUSTER_NAME="${{ env.EKS_CLUSTER_NAME }}"
+    fi
 ```
-**Fait** : Récupère le nom du cluster créé (ex: `meteo-cluster-dev`)
+**Fait** : Récupère le nom du cluster créé avec un système de fallback
+- **Essaie d'abord** : Récupère depuis les outputs Terraform
+- **Si échec** : Utilise la variable d'environnement `EKS_CLUSTER_NAME` (ex: `meteo-cluster-dev`)
 
 ```yaml
 - name: Configure kubectl
@@ -426,6 +439,21 @@ push:
 ---
 
 ### Section `deploy-helm` - Étapes Détaillées
+
+```yaml
+- name: Get Cluster Info
+  run: |
+    CLUSTER_NAME=$(terraform output -raw cluster_name 2>/dev/null || echo "")
+    if [ -z "$CLUSTER_NAME" ]; then
+      CLUSTER_NAME="${{ env.EKS_CLUSTER_NAME }}"
+    fi
+```
+**Fait** : Récupère le nom du cluster avec un système de fallback
+- **Essaie d'abord** : Récupère depuis les outputs Terraform
+- **Si échec** : Utilise la variable d'environnement `EKS_CLUSTER_NAME` (ex: `meteo-cluster-dev`)
+- **Vérifie ensuite** : Que le cluster existe vraiment via AWS CLI
+
+**Pourquoi ce fallback ?** : Parfois les outputs Terraform ne sont pas disponibles immédiatement, ou le workflow s'exécute sans avoir fait `terraform apply` avant.
 
 ```yaml
 - name: Get AWS Account ID

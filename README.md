@@ -375,10 +375,15 @@ Le workflow GitHub Actions automatise tout le processus de déploiement :
    git commit -m "Update infrastructure [terraform]"
    git push origin main
    
-   # Pour déclencher Helm
+   # Pour déclencher Helm (nécessite que le cluster existe déjà)
    git commit -m "Update application [helm]"
    git push origin main
    ```
+
+**Note** : Le workflow garantit l'ordre d'exécution :
+- `terraform-apply` attend que `terraform-plan` soit terminé
+- `deploy-helm` attend que `terraform-apply` soit terminé
+- Si les outputs Terraform ne sont pas disponibles, le workflow utilise la variable d'environnement `EKS_CLUSTER_NAME` comme fallback
 
 📖 **Guide complet** : Consultez `.github/workflows/EKS_WORKFLOW_GUIDE.md` pour toutes les options.
 
