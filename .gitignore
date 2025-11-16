@@ -1,5 +1,7 @@
-# Maven
+# Maven build outputs
 target/
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
 pom.xml.tag
 pom.xml.releaseBackup
 pom.xml.versionsBackup
@@ -7,10 +9,8 @@ pom.xml.next
 release.properties
 dependency-reduced-pom.xml
 buildNumber.properties
-.mvn/timing.properties
-.mvn/wrapper/maven-wrapper.jar
 
-# IDE
+# IDE files
 .idea/
 *.iml
 *.iws
@@ -30,10 +30,16 @@ Thumbs.db
 # Logs
 *.log
 
-# Spring Boot
+# Spring Boot local configuration
 application-local.properties
 
-# Environment files
+# Environment files (keep env.example)
 .env
 .env.local
 .env.*.local
+
+# Docker Compose local overrides
+docker-compose.override.yml
+
+# Compiled Java classes
+*.class
