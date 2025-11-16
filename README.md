@@ -283,9 +283,28 @@ docker run -p 8082:8082 <ECR_URI>/meteo-location-service:latest
 docker run -p 8083:8083 <ECR_URI>/meteo-weather-report-service:latest
 ```
 
+## Configuration AWS CLI
+
+Avant de pouvoir utiliser les images Docker depuis ECR, vous devez configurer AWS CLI.
+
+**Configuration rapide :**
+```bash
+# Méthode automatique (interactive)
+./configure-aws.sh
+
+# OU méthode manuelle
+aws configure
+```
+
+📖 **Guide complet** : Consultez `AWS_CONFIGURATION_GUIDE.md` pour plus de détails.
+
 ## Tester l'Application avec Docker
 
 Une fois que vos images sont poussées vers AWS ECR, vous pouvez les tester localement.
+
+**⚠️ Si les containers s'arrêtent immédiatement**, consultez :
+- `FIX_CONTAINER_EXIT.md` pour le diagnostic
+- `./diagnose-containers.sh` pour un diagnostic automatique
 
 ### Méthode Rapide (Recommandée)
 
@@ -293,35 +312,40 @@ Une fois que vos images sont poussées vers AWS ECR, vous pouvez les tester loca
 # 1. Configurer l'environnement ECR automatiquement
 ./setup-ecr-env.sh
 
-# 2. Pull et lancer tous les services
-docker-compose pull
-docker-compose up -d
+# 2. Authentifier à AWS ECR (OBLIGATOIRE avant de pull)
+./authenticate-ecr.sh
 
-# 3. Attendre 10 secondes que les services démarrent
+# 3. Pull et lancer tous les services
+docker compose pull
+docker compose up -d
+
+# 4. Attendre 10 secondes que les services démarrent
 sleep 10
 
-# 4. Tester tous les services
+# 5. Tester tous les services
 ./test-services.sh
 
-# 5. Voir les logs
-docker-compose logs -f
+# 6. Voir les logs
+docker compose logs -f
 
-# 6. Arrêter tout
-docker-compose down
+# 7. Arrêter tout
+docker compose down
 ```
 
 ### Méthode Manuelle
 
 ```bash
-# 1. Authentifier à ECR
-aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com
+# 1. Configurer l'environnement ECR
+./setup-ecr-env.sh
 
-# 2. Créer un fichier .env avec votre ECR_REGISTRY
-echo "ECR_REGISTRY=<votre-registry>" > .env
-echo "IMAGE_TAG=latest" >> .env
+# 2. Authentifier à AWS ECR (OBLIGATOIRE)
+./authenticate-ecr.sh
+# OU manuellement :
+# aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com
 
-# 3. Lancer avec Docker Compose
-docker-compose up -d
+# 3. Pull et lancer avec Docker Compose
+docker compose pull
+docker compose up -d
 
 # 4. Tester
 curl http://localhost:8083/api/report/Paris
