@@ -307,28 +307,38 @@ jobs:
         working-directory: ${{ env.TERRAFORM_DIR }}
         run: terraform init
 
-      - name: Check Terraform State
-        id: check-state
-        working-directory: ${{ env.TERRAFORM_DIR }}
-        run: |
-          RESOURCES=$(terraform state list 2>/dev/null | wc -l || echo "0")
-          echo "resources_count=$RESOURCES" >> $GITHUB_OUTPUT
-          if [ "$RESOURCES" -eq "0" ]; then
-            echo "⚠️  Terraform state is empty. Resources may have been created in a previous run."
-            echo "Will attempt manual cleanup..."
-          else
-            echo "✓ Found $RESOURCES resources in state"
-          fi
-
       - name: Terraform Destroy
-        if: steps.check-state.outputs.resources_count != '0'
+        id: terraform-destroy
         working-directory: ${{ env.TERRAFORM_DIR }}
-        run: terraform destroy -auto-approve
+        continue-on-error: true
+        run: |
+          terraform destroy -auto-approve
+          DESTROY_EXIT=$?
+          if [ $DESTROY_EXIT -eq 0 ]; then
+            echo "destroy_success=true" >> $GITHUB_OUTPUT
+            echo "✓ Terraform destroy completed successfully"
+          else
+            echo "destroy_success=false" >> $GITHUB_OUTPUT
+            echo "⚠️  Terraform destroy had issues (exit code: $DESTROY_EXIT)"
+          fi
         env:
           TF_VAR_environment: ${{ github.event.inputs.environment || 'dev' }}
 
+      - name: Check if Manual Cleanup is Needed
+        id: check-cleanup
+        working-directory: ${{ env.TERRAFORM_DIR }}
+        run: |
+          RESOURCES=$(terraform state list 2>/dev/null | wc -l || echo "0")
+          if [ "$RESOURCES" -eq "0" ] || [ -z "$RESOURCES" ]; then
+            echo "needs_cleanup=true" >> $GITHUB_OUTPUT
+            echo "⚠️  Terraform state is empty. Manual cleanup will be performed."
+          else
+            echo "needs_cleanup=false" >> $GITHUB_OUTPUT
+            echo "✓ Resources found in state: $RESOURCES"
+          fi
+
       - name: Manual Cleanup (if state is empty)
-        if: steps.check-state.outputs.resources_count == '0'
+        if: steps.check-cleanup.outputs.needs_cleanup == 'true'
         working-directory: ${{ env.TERRAFORM_DIR }}
         run: |
           echo "🗑️  Performing manual cleanup of AWS resources..."
@@ -338,7 +348,16 @@ jobs:
           
           # 1. Delete EKS Cluster and Node Groups
           echo "1. Checking for EKS clusters..."
-          CLUSTERS=$(aws eks list-clusters --region $AWS_REGION --query "clusters[?contains(@, '$CLUSTER_NAME')]" --output text 2>/dev/null || echo "")
+          echo "   Looking for clusters matching: $CLUSTER_NAME"
+          ALL_CLUSTERS=$(aws eks list-clusters --region $AWS_REGION --query 'clusters[*]' --output text 2>/dev/null || echo "")
+          echo "   All clusters in region: $ALL_CLUSTERS"
+          
+          # Try exact match first, then partial match
+          CLUSTERS=$(aws eks list-clusters --region $AWS_REGION --query "clusters[?@=='$CLUSTER_NAME']" --output text 2>/dev/null || echo "")
+          if [ -z "$CLUSTERS" ]; then
+            CLUSTERS=$(aws eks list-clusters --region $AWS_REGION --query "clusters[?contains(@, 'meteo-cluster')]" --output text 2>/dev/null || echo "")
+          fi
+          
           if [ -n "$CLUSTERS" ]; then
             for CLUSTER in $CLUSTERS; do
               echo "   Found cluster: $CLUSTER"
@@ -372,7 +391,18 @@ jobs:
           
           # 3. Delete VPCs and associated resources
           echo "3. Deleting VPCs..."
+          echo "   Looking for VPCs with tag Project=meteo..."
           VPCS=$(aws ec2 describe-vpcs --region $AWS_REGION --filters "Name=tag:Project,Values=meteo" --query 'Vpcs[*].VpcId' --output text 2>/dev/null || echo "")
+          if [ -z "$VPCS" ]; then
+            echo "   No VPCs found with tag Project=meteo, trying cluster name tag..."
+            VPCS=$(aws ec2 describe-vpcs --region $AWS_REGION --filters "Name=tag:Name,Values=*meteo-cluster*" --query 'Vpcs[*].VpcId' --output text 2>/dev/null || echo "")
+          fi
+          if [ -z "$VPCS" ]; then
+            echo "   No VPCs found with tags, listing all VPCs for debugging..."
+            ALL_VPCS=$(aws ec2 describe-vpcs --region $AWS_REGION --query 'Vpcs[*].[VpcId,Tags[?Key==`Name`].Value|[0],Tags[?Key==`Project`].Value|[0]]' --output text 2>/dev/null || echo "")
+            echo "   All VPCs in region: $ALL_VPCS"
+          fi
+          echo "   Found VPCs to delete: $VPCS"
           for VPC_ID in $VPCS; do
             echo "   Processing VPC: $VPC_ID"
             # Delete subnets
