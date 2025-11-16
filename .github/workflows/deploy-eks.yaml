@@ -41,6 +41,7 @@ env:
   TERRAFORM_DIR: terraform
   HELM_CHART_DIR: helm/meteo-app
   NAMESPACE: meteo
+  EKS_CLUSTER_NAME: meteo-cluster-${{ github.event.inputs.environment || 'dev' }}
 
 jobs:
   terraform-plan:
@@ -126,7 +127,17 @@ jobs:
         id: cluster
         working-directory: ${{ env.TERRAFORM_DIR }}
         run: |
-          CLUSTER_NAME=$(terraform output -raw cluster_name)
+          # Get cluster name from Terraform outputs
+          CLUSTER_NAME=$(terraform output -raw cluster_name 2>/dev/null || echo "")
+          
+          # Fallback to environment variable if output not available
+          if [ -z "$CLUSTER_NAME" ]; then
+            CLUSTER_NAME="${{ env.EKS_CLUSTER_NAME }}"
+            echo "⚠️  Using cluster name from environment: $CLUSTER_NAME"
+          else
+            echo "✅ Cluster name from Terraform: $CLUSTER_NAME"
+          fi
+          
           echo "cluster_name=$CLUSTER_NAME" >> $GITHUB_OUTPUT
 
       - name: Configure kubectl
@@ -141,10 +152,14 @@ jobs:
   deploy-helm:
     name: Deploy with Helm
     runs-on: ubuntu-latest
+    # If action is 'all', wait for terraform-apply. Otherwise, can run independently
+    needs: 
+      - terraform-apply
     if: |
-      github.event.inputs.action == 'deploy-helm' || 
-      github.event.inputs.action == 'all' || 
-      (github.event_name == 'push' && contains(github.event.head_commit.message, '[helm]'))
+      always() &&
+      (github.event.inputs.action == 'deploy-helm' || 
+       github.event.inputs.action == 'all' || 
+       (github.event_name == 'push' && contains(github.event.head_commit.message, '[helm]')))
     
     steps:
       - name: Checkout code
@@ -167,11 +182,22 @@ jobs:
         working-directory: ${{ env.TERRAFORM_DIR }}
         run: |
           terraform init
+          # Try to get cluster name from Terraform outputs
           CLUSTER_NAME=$(terraform output -raw cluster_name 2>/dev/null || echo "")
+          
+          # If not found, construct it from environment variable
           if [ -z "$CLUSTER_NAME" ]; then
-            echo "Cluster not found. Run terraform apply first."
+            CLUSTER_NAME="${{ env.EKS_CLUSTER_NAME }}"
+            echo "⚠️  Cluster name not found in Terraform outputs, using: $CLUSTER_NAME"
+          fi
+          
+          # Verify cluster exists
+          if ! aws eks describe-cluster --name "$CLUSTER_NAME" --region ${{ env.AWS_REGION }} >/dev/null 2>&1; then
+            echo "❌ Error: Cluster '$CLUSTER_NAME' does not exist. Run terraform apply first."
             exit 1
           fi
+          
+          echo "✅ Cluster found: $CLUSTER_NAME"
           echo "cluster_name=$CLUSTER_NAME" >> $GITHUB_OUTPUT
 
       - name: Configure kubectl
