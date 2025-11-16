@@ -9,6 +9,7 @@
         <groupId>com.meteo</groupId>
         <artifactId>meteo-parent</artifactId>
         <version>1.0.0</version>
+        <relativePath>../../pom.xml</relativePath>
     </parent>
 
     <artifactId>weather-report-service</artifactId>
