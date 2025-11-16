@@ -32,3 +32,8 @@ Thumbs.db
 
 # Spring Boot
 application-local.properties
+
+# Environment files
+.env
+.env.local
+.env.*.local

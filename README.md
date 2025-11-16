@@ -283,6 +283,65 @@ docker run -p 8082:8082 <ECR_URI>/meteo-location-service:latest
 docker run -p 8083:8083 <ECR_URI>/meteo-weather-report-service:latest
 ```
 
+## Tester l'Application avec Docker
+
+Une fois que vos images sont poussées vers AWS ECR, vous pouvez les tester localement.
+
+### Méthode Rapide (Recommandée)
+
+```bash
+# 1. Configurer l'environnement ECR automatiquement
+./setup-ecr-env.sh
+
+# 2. Pull et lancer tous les services
+docker-compose pull
+docker-compose up -d
+
+# 3. Attendre 10 secondes que les services démarrent
+sleep 10
+
+# 4. Tester tous les services
+./test-services.sh
+
+# 5. Voir les logs
+docker-compose logs -f
+
+# 6. Arrêter tout
+docker-compose down
+```
+
+### Méthode Manuelle
+
+```bash
+# 1. Authentifier à ECR
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <AWS_ACCOUNT_ID>.dkr.ecr.us-east-1.amazonaws.com
+
+# 2. Créer un fichier .env avec votre ECR_REGISTRY
+echo "ECR_REGISTRY=<votre-registry>" > .env
+echo "IMAGE_TAG=latest" >> .env
+
+# 3. Lancer avec Docker Compose
+docker-compose up -d
+
+# 4. Tester
+curl http://localhost:8083/api/report/Paris
+```
+
+📖 **Guide complet** : Consultez `TESTING_GUIDE.md` pour plus de détails et d'options de test.
+
+## Nettoyage AWS ECR
+
+Quand vous avez fini d'utiliser AWS ECR, consultez le guide `CLEANUP_AWS.md` pour éviter des coûts inutiles.
+
+**Nettoyage rapide :**
+```bash
+# Exécuter le script de nettoyage (demande confirmation)
+./cleanup-ecr.sh
+
+# Ou supprimer manuellement via AWS CLI
+aws ecr delete-repository --reposi  tory-name meteo-weather-service --region us-east-1 --force
+```
+
 ## License
 
 This is a simple educational project.
