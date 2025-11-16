@@ -23,8 +23,8 @@ RUN mvn clean package -DskipTests -pl microservices/weather-report-service -am
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
-# Copy jar from build stage
-COPY --from=build /app/microservices/weather-report-service/target/*.jar app.jar
+# Copy jar from build stage (Spring Boot creates a fat jar)
+COPY --from=build /app/microservices/weather-report-service/target/weather-report-service-*.jar app.jar
 
 # Expose port
 EXPOSE 8083

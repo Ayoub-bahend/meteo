@@ -23,8 +23,8 @@ RUN mvn clean package -DskipTests -pl microservices/location-service -am
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 
-# Copy jar from build stage
-COPY --from=build /app/microservices/location-service/target/*.jar app.jar
+# Copy jar from build stage (Spring Boot creates a fat jar)
+COPY --from=build /app/microservices/location-service/target/location-service-*.jar app.jar
 
 # Expose port
 EXPOSE 8082
