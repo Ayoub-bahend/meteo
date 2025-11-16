@@ -53,7 +53,7 @@ fi
 
 echo ""
 echo "🚀 Vous pouvez maintenant utiliser :"
-echo "   docker-compose pull   # Pull les images depuis ECR"
-echo "   docker-compose up -d  # Lancer tous les services"
+echo "   docker compose pull   # Pull les images depuis ECR"
+echo "   docker compose up -d  # Lancer tous les services"
 echo "   ./test-services.sh    # Tester les services"
 
