@@ -115,6 +115,13 @@ module "eks" {
   # IRSA (IAM Roles for Service Accounts)
   enable_irsa = true
 
+  # CloudWatch Logging
+  cluster_enabled_log_types = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
+
+  # KMS Encryption (utilise une clé KMS existante si disponible, sinon en crée une nouvelle)
+  create_kms_key = true
+  kms_key_deletion_window_in_days = 7
+
   tags = {
     Environment = var.environment
   }
