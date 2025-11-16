@@ -353,6 +353,91 @@ curl http://localhost:8083/api/report/Paris
 
 📖 **Guide complet** : Consultez `TESTING_GUIDE.md` pour plus de détails et d'options de test.
 
+## Déploiement EKS avec Terraform et Helm
+
+Déployez vos microservices sur AWS EKS (Elastic Kubernetes Service) avec Terraform et Helm.
+
+### Déploiement via GitHub Actions (Recommandé)
+
+Le workflow GitHub Actions automatise tout le processus de déploiement :
+
+1. **Via GitHub UI** :
+   - Aller sur Actions → "Deploy to EKS"
+   - Cliquer sur "Run workflow"
+   - Choisir l'action (`plan`, `apply`, `deploy-helm`, `all`, ou `destroy`)
+   - Choisir l'environnement (`dev`, `staging`, `prod`)
+   - Choisir le tag d'image Docker
+   - Cliquer sur "Run workflow"
+
+2. **Via Push automatique** :
+   ```bash
+   # Pour déclencher Terraform
+   git commit -m "Update infrastructure [terraform]"
+   git push origin main
+   
+   # Pour déclencher Helm
+   git commit -m "Update application [helm]"
+   git push origin main
+   ```
+
+📖 **Guide complet** : Consultez `.github/workflows/EKS_WORKFLOW_GUIDE.md` pour toutes les options.
+
+### Déploiement Manuel (Terraform + Helm)
+
+Si vous préférez déployer manuellement sans GitHub Actions :
+
+```bash
+# 1. Créer le cluster EKS
+cd terraform
+terraform init
+terraform plan
+terraform apply
+
+# 2. Configurer kubectl
+aws eks update-kubeconfig --region us-east-1 --name meteo-cluster
+
+# 3. Créer le secret ECR
+export AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+export ECR_TOKEN=$(aws ecr get-login-password --region us-east-1)
+kubectl create namespace meteo
+kubectl create secret docker-registry ecr-registry-secret \
+  --docker-server=${AWS_ACCOUNT_ID}.dkr.ecr.us-east-1.amazonaws.com \
+  --docker-username=AWS \
+  --docker-password=${ECR_TOKEN} \
+  --namespace=meteo
+
+# 4. Déployer avec Helm
+cd ..
+helm upgrade --install meteo-app ./helm/meteo-app \
+  --namespace meteo \
+  --create-namespace \
+  --set global.awsAccountId=$AWS_ACCOUNT_ID \
+  --set global.awsRegion=us-east-1 \
+  --set global.imageTag=latest \
+  --set global.ecrToken=$ECR_TOKEN
+```
+
+### Structure du Déploiement
+
+- **Terraform** (`terraform/`) : Configuration de l'infrastructure EKS
+  - VPC avec sous-réseaux publics/privés
+  - Cluster EKS avec node groups
+  - Security groups et networking
+  
+- **Helm** (`helm/meteo-app/`) : Charts pour déployer les microservices
+  - Weather Service (Deployment + Service)
+  - Location Service (Deployment + Service)
+  - Weather Report Service (Deployment + LoadBalancer Service)
+
+📖 **Guide complet** : Consultez `EKS_DEPLOYMENT_GUIDE.md` pour les instructions détaillées étape par étape.
+
+### Prérequis
+
+- AWS CLI configuré
+- Terraform >= 1.0
+- kubectl installé
+- Helm >= 3.0
+
 ## Nettoyage AWS ECR
 
 Quand vous avez fini d'utiliser AWS ECR, consultez le guide `CLEANUP_AWS.md` pour éviter des coûts inutiles.

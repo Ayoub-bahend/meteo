@@ -1,0 +1,87 @@
+# Default values for meteo-app
+# This is a YAML-formatted file.
+
+# Global settings
+global:
+  awsRegion: us-east-1
+  awsAccountId: ""  # Will be auto-detected or set via --set
+  ecrRepositoryPrefix: meteo
+  imageTag: latest
+  ecrRegistry: ""  # Will be set automatically: ${awsAccountId}.dkr.ecr.${awsRegion}.amazonaws.com
+  ecrToken: ""  # ECR login token - required for image pull secret
+
+# Weather Service Configuration
+weatherService:
+  enabled: true
+  image:
+    repository: ""  # Will be set to ${awsAccountId}.dkr.ecr.${awsRegion}.amazonaws.com/${ecrRepositoryPrefix}-weather-service
+    tag: ""
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  service:
+    type: ClusterIP
+    port: 8081
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+# Location Service Configuration
+locationService:
+  enabled: true
+  image:
+    repository: ""  # Will be set automatically
+    tag: ""
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  service:
+    type: ClusterIP
+    port: 8082
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+# Weather Report Service Configuration
+weatherReportService:
+  enabled: true
+  image:
+    repository: ""  # Will be set automatically
+    tag: ""
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  service:
+    type: LoadBalancer  # Use LoadBalancer to expose externally
+    port: 8083
+    annotations:
+      service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+  environment:
+    weatherServiceUrl: "http://weather-service:8081"
+    locationServiceUrl: "http://location-service:8082"
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+# Image Pull Secrets (for ECR)
+imagePullSecrets:
+  - name: ecr-registry-secret
+
+# Service Account
+serviceAccount:
+  create: true
+  name: meteo-service-account
+  annotations: {}
+
+# Namespace
+namespace: meteo
+
